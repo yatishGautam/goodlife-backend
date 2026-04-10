@@ -1,0 +1,65 @@
+# ─── Dependencies ─────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ─── Build Output ─────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+
+# ─── Environment Variables ────────────────────────────
+.env
+.env.local
+.env.production
+.env.staging
+!.env.example
+
+# ─── Prisma ───────────────────────────────────────────
+prisma/migrations/**/migration_lock.toml
+
+# ─── Docker ───────────────────────────────────────────
+docker/pgdata/
+
+# ─── IDE / Editor ─────────────────────────────────────
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Logs ─────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ─── Testing ──────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── OS Files ─────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ─── AWS / Infra ──────────────────────────────────────
+*.pem
+*.key
+.terraform/
+terraform.tfstate*
+cdk.out/
+
+# ─── Misc ─────────────────────────────────────────────
+*.tgz
+.cache/
+tmp/
+temp/

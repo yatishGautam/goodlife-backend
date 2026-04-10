@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH & USERS ────────────────────────────────────────
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique
+  passwordHash    String     @map("password_hash")
+  displayName     String     @map("display_name")
+  avatarUrl       String?    @map("avatar_url")
+  preferredUnit   WeightUnit @default(lbs) @map("preferred_unit")
+  hapticsEnabled  Boolean    @default(true) @map("haptics_enabled")
+  soundEnabled    Boolean    @default(true) @map("sound_enabled")
+  timezone        String     @default("America/New_York")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  refreshTokens RefreshToken[]
+  templates     WorkoutTemplate[]
+  sessions      WorkoutSession[]
+  devices       UserDevice[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  token     String    @unique
+  deviceId  String?   @map("device_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model UserDevice {
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  deviceType DeviceType @map("device_type")
+  deviceName String?    @map("device_name")
+  pushToken  String?    @map("push_token")
+  lastSyncAt DateTime?  @map("last_sync_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_devices")
+}
+
+enum DeviceType {
+  ios
+  watchos
+  web
+
+  @@map("device_type")
+}
+
+enum WeightUnit {
+  lbs
+  kg
+
+  @@map("weight_unit")
+}
+
+// ─── WORKOUT TEMPLATES ──────────────────────────────────
+
+model WorkoutTemplate {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  name             String
+  description      String?
+  tags             String[]
+  suggestedWeekdays Int[]    @map("suggested_weekdays")
+  estimatedMinutes Int       @map("estimated_minutes")
+  isArchived       Boolean   @default(false) @map("is_archived")
+  isPublic         Boolean   @default(false) @map("is_public")
+  sortOrder        Int       @default(0) @map("sort_order")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises ExerciseDefinition[]
+  sessions  WorkoutSession[]
+
+  @@index([userId, isArchived])
+  @@index([userId, deletedAt])
+  @@map("workout_templates")
+}
+
+model ExerciseDefinition {
+  id              String     @id @default(uuid()) @db.Uuid
+  templateId      String     @map("template_id") @db.Uuid
+  name            String
+  notes           String?
+  timerConfig     Json       @map("timer_config")
+  targetSets      Int?       @map("target_sets")
+  targetReps      Int?       @map("target_reps")
+  targetWeight    Float?     @map("target_weight")
+  weightUnit      WeightUnit @default(lbs) @map("weight_unit")
+  restBetweenSets Int        @default(90) @map("rest_between_sets")
+  orderIndex      Int        @map("order_index")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  template     WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exerciseLogs ExerciseLog[]
+
+  @@index([templateId, orderIndex])
+  @@map("exercise_definitions")
+}
+
+// ─── WORKOUT SESSIONS (LOGS) ────────────────────────────
+
+model WorkoutSession {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  templateId      String    @map("template_id") @db.Uuid
+  templateName    String    @map("template_name")
+  startedAt       DateTime  @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationSeconds Int?      @map("duration_seconds")
+  notes           String?
+  totalVolume     Float?    @map("total_volume")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template     WorkoutTemplate    @relation(fields: [templateId], references: [id])
+  exerciseLogs ExerciseLog[]
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([userId, templateId])
+  @@index([userId, deletedAt])
+  @@map("workout_sessions")
+}
+
+model ExerciseLog {
+  id                   String   @id @default(uuid()) @db.Uuid
+  sessionId            String   @map("session_id") @db.Uuid
+  exerciseDefinitionId String   @map("exercise_definition_id") @db.Uuid
+  exerciseName         String   @map("exercise_name")
+  orderIndex           Int      @map("order_index")
+  timerElapsedSeconds  Int?     @map("timer_elapsed_seconds")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  session            WorkoutSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseDefinition ExerciseDefinition @relation(fields: [exerciseDefinitionId], references: [id])
+  sets               SetLog[]
+
+  @@index([sessionId, orderIndex])
+  @@map("exercise_logs")
+}
+
+model SetLog {
+  id            String     @id @default(uuid()) @db.Uuid
+  exerciseLogId String     @map("exercise_log_id") @db.Uuid
+  setNumber     Int        @map("set_number")
+  reps          Int?
+  weight        Float?
+  weightUnit    WeightUnit @default(lbs) @map("weight_unit")
+  isSkipped     Boolean    @default(false) @map("is_skipped")
+  notes         String?
+  completedAt   DateTime   @default(now()) @map("completed_at")
+
+  exerciseLog ExerciseLog @relation(fields: [exerciseLogId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseLogId, setNumber])
+  @@map("set_logs")
+}
