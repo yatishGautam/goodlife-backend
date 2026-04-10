@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(docker --version)",
+      "Bash(docker compose:*)",
+      "Bash(docker-compose --version)",
+      "Bash(command -v nvm)",
+      "Read(//Users/yatishgautam/.nvm/versions/node/**)",
+      "Bash(open -a Docker)",
+      "Bash(docker info:*)",
+      "Bash(docker exec:*)"
     ]
   }
 }
