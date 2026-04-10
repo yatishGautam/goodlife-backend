@@ -8,6 +8,7 @@ import { errorHandler } from '@/middleware/errorHandler';
 import { apiRateLimiter } from '@/middleware/rateLimiter';
 import authRoutes from '@/modules/auth/auth.routes';
 import userRoutes from '@/modules/users/user.routes';
+import templateRoutes from '@/modules/templates/template.routes';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.get('/health', async (_req, res) => {
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/templates', templateRoutes);
 
 // ─── Error handler (must be last) ────────────────────────────────────────────
 app.use(errorHandler);
